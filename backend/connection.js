@@ -20,4 +20,5 @@ async function connectToDatabase(){
     return connection;
 }
 
+//export the function without parantheses means only a reference to the function is exported; allowing the importing file to have a flexibility decide when to call the function and execute its logic
 module.exports = connectToDatabase;

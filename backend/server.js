@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const connectToDatabase = require('./connection.js');
 
+
+//call the connectToDatabase here to get the promise "db"
 let db;
 (async function initializeDbConnection() {
     db = await connectToDatabase();
@@ -15,6 +17,11 @@ let db;
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(cors({
+    origin: 'http://localhost:3000', // Frontend origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    credentials: true, // Allow cookies and credentials if needed
+}));
 
 const port = process.env.PORT || 3080;
 
@@ -23,9 +30,41 @@ app.get("/", async (req, res) => {
         const sql = `SELECT * FROM food`;
         const [rows, fields] = await db.query(sql)
         console.log(rows);
-        console.log(fields);
+        // console.log(fields);
+        console.log("sent data back to frontend!");
+        res.json(rows);
     } catch (err) {
         console.log(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+})
+
+app.post("/item", async (req, res) => {
+    const { Item } = req.body;
+    try{
+        const sql = `SELECT * FROM food where Item = ?`;
+        const value = Item
+        const [rows, fields] = await db.query(sql, value)
+        console.log(rows);
+        // console.log(fields);
+        if (rows.length > 0) {
+            const sql = `UPDATE food SET Amount = Amount + 1 WHERE Item = ?`;
+            const value = Item;
+            await db.query(sql, value);
+            console.log("incremented " + Item + " by 1!" );
+        }
+        else{
+            console.log("item hasn't existed yet...");
+            const sql = `Insert into food (ID, Item, Category, Amount) VALUES (?, ?, ?, ?)`;
+            const value = [5, Item, 'Fruit', 1];
+            await db.query(sql, value);
+            console.log("created a new item!");
+        }
+        console.log("sent data back to frontend!");
+        res.json(rows);
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 })
 

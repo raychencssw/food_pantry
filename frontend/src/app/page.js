@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Stack, Typography, Button, Modal, TextField } from '@mui/material'
-import { firestore } from '@/firebase'
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  setDoc,
-  deleteDoc,
-  getDoc,
-} from 'firebase/firestore'
+
 
 const item = [
   'tomato',
@@ -44,50 +35,41 @@ export default function Home() {
   const [sortOrder, setSortOrder] = useState('asc')
   const [sortCriterion, setSortCriterion] = useState('name')
 
-  const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'pantry'))
-    const docs = await getDocs(snapshot)
-    console.log(docs)
-    const pantryList = []
-    docs.forEach((doc) => {
-      pantryList.push({ name: doc.id, ...doc.data() })
-      console.log(doc.data())
-    })
-    setPantry(pantryList)
-    // console.log(docs)
-  }
-  
-  // useEffect(() => {
-  //   updateInventory()
-  // }, [])
 
-  // useEffect(() => {
-  //   console.log('Pantry state has changed:', pantry)
-  // }, [pantry])
+  const updateInventory = async () => {
+    await fetch('http://localhost:3080')
+      .then( response => response.json() )
+      .then( data => {
+        console.log("Data from backend:", data)
+        setPantry(data) 
+      });
+  }
+
+  
+  useEffect(() => {
+    console.log("Updated pantry:", pantry);
+    updateInventory( response => response.json() );
+  }, [])
+
 
   const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'pantry'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
-    } else {
-      await setDoc(docRef, { quantity: 1 })
-    }
-    await updateInventory()
+
+    //step1: query the item being added(need to create a new backend route "localhost:3080/item")
+    //step2: if it doesn't exist yet, add it to thd DB; if it does, increment the quantity
+    //step3: update the inventory
+    await fetch('http://localhost:3080/item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Item: item}),
+    }).then( response => response.json() )
+      .then( data => {
+        console.log("Data from backend:", data)
+      });
+    await updateInventory() 
   }
   
   const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'pantry'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      if (quantity === 1) {
-        await deleteDoc(docRef)
-      } else {
-        await setDoc(docRef, { quantity: quantity - 1 })
-      }
-    }
+
     await updateInventory()
   }
 
@@ -177,7 +159,7 @@ export default function Home() {
           <Typography variant={'h2'} color={'#333'} textAlign={'center'}>Inventory Management</Typography>
         </Box>
         <Stack width="800px" height="300px" spacing={2} overflow={'auto'}>
-          {item.map((i)=>(
+          {/* {item.map((i)=>(
             <Box 
               key={i} 
               width="100%"
@@ -191,10 +173,12 @@ export default function Home() {
             >
               {i}
             </Box>
-          ))}
-          {/* {pantry.map(({name, quantity, category})=>(
+          ))} */}
+
+          
+          {pantry.map(({ID, Item, Category, Amount})=>(
             <Box 
-              key={name} 
+              key={Item} 
               width="100%"
               minHeight="150px"
               display={'flex'}
@@ -203,22 +187,23 @@ export default function Home() {
               bgcolor={'#f0f0f0'}
               paddingX={5}
             >
+
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                {name.charAt(0).toUpperCase() + name.slice(1)}
+                {Item.charAt(0).toUpperCase() + Item.slice(1)}
               </Typography>
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                Quantity: {quantity}
+                Quantity: {Amount}
               </Typography>
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                Category: {category}
+                Category: {Category}
               </Typography>
-              <Button variant="contained" onClick={() => removeItem(name)}>
+              <Button variant="contained" onClick={() => removeItem(Item)}>
                 Remove
               </Button>
             </Box>
-          ))} */}
+           ))}
         </Stack>
       </Box>
-    </Box>
+    </Box> 
   )
 }
