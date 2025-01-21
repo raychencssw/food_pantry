@@ -54,10 +54,7 @@ export default function Home() {
 
   const addItem = async (item) => {
 
-    //step1: query the item being added(need to create a new backend route "localhost:3080/item")
-    //step2: if it doesn't exist yet, add it to thd DB; if it does, increment the quantity
-    //step3: update the inventory
-    await fetch('http://localhost:3080/item', {
+    await fetch('http://localhost:3080/add-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Item: item}),
@@ -69,7 +66,14 @@ export default function Home() {
   }
   
   const removeItem = async (item) => {
-
+    await fetch('http://localhost:3080/remove-item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Item: item}),
+    }).then( response => response.json() )
+      .then( data => {
+        console.log("Data from backend:", data)
+      });
     await updateInventory()
   }
 
