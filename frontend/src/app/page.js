@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Stack, Typography, Button, Modal, TextField } from '@mui/material'
+import Link from 'next/link';
 
 
 const item = [
@@ -29,11 +30,13 @@ const style = {
 
 export default function Home() {
 
-  const [pantry, setPantry] = useState([])
-  const [open, setOpen] = useState(false)
-  const [itemName, setItemName] = useState('')
-  const [sortOrder, setSortOrder] = useState('asc')
-  const [sortCriterion, setSortCriterion] = useState('name')
+  const [pantry, setPantry] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [itemName, setItemName] = useState('');
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState(0);
+  const [sortOrder, setSortOrder] = useState('asc');   //controlls the sort-by button (asc or des)
+  const [sortCriterion, setSortCriterion] = useState('Item');
 
 
   const updateInventory = async () => {
@@ -47,17 +50,17 @@ export default function Home() {
 
   
   useEffect(() => {
+    updateInventory();
     console.log("Updated pantry:", pantry);
-    updateInventory( response => response.json() );
   }, [])
 
 
-  const addItem = async (item) => {
+  const addItem = async (item, category, amount) => {
 
     await fetch('http://localhost:3080/add-item', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Item: item}),
+      body: JSON.stringify({ Item: item, Category: category, Amount: amount}),
     }).then( response => response.json() )
       .then( data => {
         console.log("Data from backend:", data)
@@ -80,23 +83,25 @@ export default function Home() {
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
 
-  const handleSort = (criterion) => {
+  const handleSort = (sortCriterion) => {
     const sortedPantry = [...pantry].sort((a, b) => {
-      if (criterion === 'name') {
-        if (a.name < b.name) return sortOrder === 'asc' ? -1 : 1
-        if (a.name > b.name) return sortOrder === 'asc' ? 1 : -1
+      if (sortCriterion === 'Item') {
+        if (a.Item < b.Item) return sortOrder === 'asc' ? -1 : 1
+        if (a.Item > b.Item) return sortOrder === 'asc' ? 1 : -1
+        if (a.Amount < b.Amount) return sortOrder === 'asc' ? -1 : 1
+        if (a.Amount > b.Amount) return sortOrder === 'asc' ? 1 : -1
         return 0
-      } else if (criterion === 'quantity') {
-        if (a.quantity < b.quantity) return sortOrder === 'asc' ? -1 : 1
-        if (a.quantity > b.quantity) return sortOrder === 'asc' ? 1 : -1
-        if (a.name < b.name) return -1
-        if (a.name > b.name) return 1
+      } else if (sortCriterion === 'Amount') {
+        if (a.Amount < b.Amount) return sortOrder === 'asc' ? -1 : 1
+        if (a.Amount > b.Amount) return sortOrder === 'asc' ? 1 : -1
+        if (a.Item < b.Item) return -1
+        if (a.Item > b.Item) return 1
         return 0
       }
     })
     setPantry(sortedPantry)
     setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    setSortCriterion(criterion)
+    setSortCriterion(sortCriterion)
   }
 
 
@@ -129,10 +134,26 @@ export default function Home() {
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
             />
+            <TextField
+              id="outlined-basic"
+              label="Category"
+              variant="outlined"
+              fullWidth
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            />
+            <TextField
+              id="outlined-basic"
+              label="Amount"
+              variant="outlined"
+              fullWidth
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
             <Button
               variant="outlined"
               onClick={() => {
-                addItem(itemName)
+                addItem(itemName, category, amount)
                 setItemName('')
                 handleClose()
               }}
@@ -145,10 +166,10 @@ export default function Home() {
       <Button variant="contained" onClick={handleOpen}>
         Add New Item
       </Button>
-      <Button variant="contained" onClick={() => handleSort('name')}>
+      <Button variant="contained" onClick={() => handleSort('Item')}>
         Sort by Name ({sortOrder === 'asc' ? 'Ascending' : 'Descending'})
       </Button>
-      <Button variant="contained" onClick={() => handleSort('quantity')}>
+      <Button variant="contained" onClick={() => handleSort('Amount')}>
         Sort by Quantity ({sortOrder === 'asc' ? 'Ascending' : 'Descending'})
       </Button>
       <Box border={'1px solid #333'}>
@@ -191,10 +212,11 @@ export default function Home() {
               bgcolor={'#f0f0f0'}
               paddingX={5}
             >
-
-              <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
-                {Item.charAt(0).toUpperCase() + Item.slice(1)}
-              </Typography>
+              <Link href={`/${Item}`} style={{ textDecoration: 'none' }}>
+                <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
+                  {Item.charAt(0).toUpperCase() + Item.slice(1)}
+                </Typography>
+              </Link>
               <Typography variant={'h3'} color={'#333'} textAlign={'center'}>
                 Quantity: {Amount}
               </Typography>

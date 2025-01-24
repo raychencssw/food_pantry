@@ -39,11 +39,35 @@ app.get("/", async (req, res) => {
     }
 })
 
+app.get("/item-details", async (req, res) => {
+    //console.log("req.query: ", req.query);
+    const Item = req.query.item;
+    //console.log("Item: ", Item);
+    try{
+        const sql = `SELECT * FROM food where Item = ?`;
+        const value = Item;
+        const [rows, fields] = await db.query(sql, value);
+        console.log(rows);
+        if (rows.length > 0){
+            console.log("sent data back to frontend!");
+            return res.json(rows);
+        }
+        else{
+            console.log("item hasn't existed yet...");
+        }
+    }
+    catch(err){
+        console.log(err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+})
+
 app.post("/add-item", async (req, res) => {
     //step1: query the item being added
     //step2: if it doesn't exist yet, add it to thd DB; if it does, increment the quantity
     
-    const { Item } = req.body;
+    const { Item, Category, Amount} = req.body;
+    // console.log("req.body for add-item: ", req.body);
     try{
         const sql = `SELECT * FROM food where Item = ?`;
         const value = Item;
@@ -51,15 +75,15 @@ app.post("/add-item", async (req, res) => {
         //console.log(rows);
         
         if (rows.length > 0) {
-            const sql = `UPDATE food SET Amount = Amount + 1 WHERE Item = ?`;
-            const value = Item;
+            const sql = `UPDATE food SET Amount = Amount + ? WHERE Item = ?`;
+            const value = [Amount, Item];
             await db.query(sql, value);
-            console.log("incremented " + Item + " by 1!" );
+            console.log("Incremented " + Item + " by " + Amount + "!");
         }
         else{
             console.log("item hasn't existed yet...");
             const sql = `Insert into food (ID, Item, Category, Amount) VALUES (?, ?, ?, ?)`;
-            const value = [5, Item, 'Fruit', 1];
+            const value = [6, Item, Category, Amount];
             await db.query(sql, value);
             console.log("created a new item!");
         }
